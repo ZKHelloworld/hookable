@@ -26,7 +26,7 @@ export default class Hookable {
           return value;
         }
 
-        // retrive the info injected by the @Hookable.registBeforeHook/@Hookable.registAfterHook
+        // retrive the info injected by the @Hookable.registInterceptHook
         const beforeHookKey = target.traverseInterceptHookKey(prop, 'before');
         const afterHookKey = target.traverseInterceptHookKey(prop, 'after');
         if (!beforeHookKey && !afterHookKey) {
@@ -85,7 +85,7 @@ export default class Hookable {
    * @param prop
    * @param type
    */
-  traverseInterceptHookKey(prop: PropType, type: string): string {
+  public traverseInterceptHookKey(prop: PropType, type: string): string {
     if (!this || !Object.getPrototypeOf(this)) {
       return '';
     }
@@ -114,7 +114,7 @@ export default class Hookable {
    * @param hookKey
    * @param fn
    */
-  addHook(hookKey: string, fn: Function): void {
+  public addHook(hookKey: string, fn: Function): void {
     let hooks = this._hooks[hookKey];
     if (!hooks) {
       hooks = [];
@@ -130,7 +130,7 @@ export default class Hookable {
    * @param hookKey
    * @param fn
    */
-  andMutexHook(hookKey: string, fn: Function): void {
+  public andMutexHook(hookKey: string, fn: Function): void {
     this.deleteHooks(hookKey);
     this.addHook(hookKey, fn);
   }
@@ -141,7 +141,7 @@ export default class Hookable {
    * @param hookKey
    * @param fns
    */
-  addHooks(hookKey: string, fns: Array<Function>): void {
+  public addHooks(hookKey: string, fns: Array<Function>): void {
     let hooks = this._hooks[hookKey];
     if (!hooks) {
       hooks = [];
@@ -157,7 +157,7 @@ export default class Hookable {
    * @param hookKey
    * @param fn
    */
-  addOnceHook(hookKey: string, fn: Function): void { }
+  public addOnceHook(hookKey: string, fn: Function): void { }
 
   /**
    * TOOD add once hooks
@@ -165,15 +165,16 @@ export default class Hookable {
    * @param hookKey
    * @param fns
    */
-  addOnceHooks(hookKey: string, fns: Array<Function>): void { }
+  public addOnceHooks(hookKey: string, fns: Array<Function>): void { }
 
   /**
+   * TODO get hook function
    *
    * @param hookKey
    * @param index
    */
-  getHook(hookKey: string, index): Function {
-    return () => { };
+  public getHook(hookKey: string, index): Function {
+    return () => {};
   }
 
   /**
@@ -182,7 +183,7 @@ export default class Hookable {
    * @param hookKey
    * @param fn
    */
-  deleteHook(hookKey: string, fn: Function): void {
+  public deleteHook(hookKey: string, fn: Function): void {
     const hooks = this._hooks[hookKey];
     if (!hooks || !hooks.length) {
       return;
@@ -202,14 +203,14 @@ export default class Hookable {
    *
    * @param hookKey
    */
-  deleteHooks(hookKey: string): void {
+  public deleteHooks(hookKey: string): void {
     delete this._hooks[hookKey];
   }
 
   /**
    * delete all hooks
    */
-  clearHooks(): void {
+  public clearHooks(): void {
     this._hooks = {};
   }
 
@@ -220,7 +221,7 @@ export default class Hookable {
    * @param index
    * @param args
    */
-  execHook(hookKey: string, index: number, ...args: any): void {
+  public execHook(hookKey: string, index: number, ...args: any): void {
     const hooks = this._hooks[hookKey];
     if (!hooks || !hooks.length || !hooks[index]) {
       return;
@@ -238,7 +239,7 @@ export default class Hookable {
    *
    * @param hookKey
    */
-  execHooks(hookKey: string, ...args: any): void {
+  public execHooks(hookKey: string, ...args: any): void {
     const hooks = this._hooks[hookKey];
     if (!hooks || !hooks.length) {
       return;

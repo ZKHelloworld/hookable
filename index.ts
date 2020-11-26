@@ -2,6 +2,8 @@
  * Provide hook ability for hierarchy class
  */
 
+type PropType = string | number | symbol;
+
 export default class Hookable {
   // store all the hook functions
   // {
@@ -18,7 +20,7 @@ export default class Hookable {
    */
   private intercept() {
     return new Proxy(this, {
-      get(target, prop, receiver: any) {
+      get(target: any, prop: PropType, receiver: any) {
         const value = Reflect.get(target, prop, receiver);
         if (typeof value !== 'function') {
           return value;
@@ -49,32 +51,19 @@ export default class Hookable {
   }
 
   /**
-   * regist before hook for class methods
+   * regist intercept hook for class methods invocation
+   *
    * @param hookKey
+   * @param isBefore
    */
-  static registBeforeHook(hookKey: string): Function {
+  static registInterceptHook(hookKey: string, isBefore: boolean = true): Function {
     return function (classProto, prop, descriptor) {
       if (!classProto.hasOwnProperty('_intercepts')) {
         classProto._intercepts = {};
       }
 
       classProto._intercepts[prop] = classProto._intercepts[prop] || {};
-      classProto._intercepts[prop].before = hookKey;
-    };
-  }
-
-  /**
-   * regist after hook for class methods
-   * @param hookKey
-   */
-  static registAfterHook(hookKey: string): Function {
-    return function (classProto, prop, descriptor) {
-      if (!classProto.hasOwnProperty('_intercepts')) {
-        classProto._intercepts = {};
-      }
-
-      classProto._intercepts[prop] = classProto._intercepts[prop] || {};
-      classProto._intercepts[prop].after = hookKey;
+      classProto._intercepts[prop][isBefore ? 'before' : 'after'] = hookKey;
     };
   }
 
@@ -96,12 +85,12 @@ export default class Hookable {
    * @param prop
    * @param type
    */
-  traverseInterceptHookKey(prop: string, type: string): string {
-    if (!this || !this.__proto__) {
+  traverseInterceptHookKey(prop: PropType, type: string): string {
+    if (!this || !Object.getPrototypeOf(this)) {
       return '';
     }
 
-    let proto = this.__proto__;
+    let proto = Object.getPrototypeOf(this);
     while (proto !== null) {
       // non _intercepts in prototype chain
       if (!proto._intercepts) {
@@ -109,7 +98,7 @@ export default class Hookable {
       }
 
       if (!proto._intercepts[prop] || !proto._intercepts[prop][type]) {
-        proto = proto.__proto__ || null;
+        proto = Object.getPrototypeOf(proto) || null;
         continue;
       }
 

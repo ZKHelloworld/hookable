@@ -4,12 +4,15 @@
 
 type PropType = string | number | symbol;
 
+const HOOKS = Symbol('hooks');
+const INTERCEPS = Symbol('intercepts');
+
 export default class Hookable {
   // store all the hook functions
   // {
   //    "beforeMount": [fn1, fn2],
   // }
-  private _hooks: object = {};
+  private [HOOKS]: object = {};
 
   constructor() {
     return this.intercept();
@@ -58,12 +61,12 @@ export default class Hookable {
    */
   static registInterceptHook(hookKey: string, isBefore: boolean = true): Function {
     return function (classProto, prop, descriptor) {
-      if (!classProto.hasOwnProperty('_intercepts')) {
-        classProto._intercepts = {};
+      if (!classProto.hasOwnProperty(INTERCEPS)) {
+        classProto[INTERCEPS] = {};
       }
 
-      classProto._intercepts[prop] = classProto._intercepts[prop] || {};
-      classProto._intercepts[prop][isBefore ? 'before' : 'after'] = hookKey;
+      classProto[INTERCEPS][prop] = classProto[INTERCEPS][prop] || {};
+      classProto[INTERCEPS][prop][isBefore ? 'before' : 'after'] = hookKey;
     };
   }
 
@@ -93,16 +96,16 @@ export default class Hookable {
     let proto = Object.getPrototypeOf(this);
     while (proto !== null) {
       // non _intercepts in prototype chain
-      if (!proto._intercepts) {
+      if (!proto[INTERCEPS]) {
         return '';
       }
 
-      if (!proto._intercepts[prop] || !proto._intercepts[prop][type]) {
+      if (!proto[INTERCEPS][prop] || !proto[INTERCEPS][prop][type]) {
         proto = Object.getPrototypeOf(proto) || null;
         continue;
       }
 
-      return proto._intercepts[prop][type];
+      return proto[INTERCEPS][prop][type];
     }
 
     return '';
@@ -115,10 +118,10 @@ export default class Hookable {
    * @param fn
    */
   public addHook(hookKey: string, fn: Function): void {
-    let hooks = this._hooks[hookKey];
+    let hooks = this[HOOKS][hookKey];
     if (!hooks) {
       hooks = [];
-      this._hooks[hookKey] = hooks;
+      this[HOOKS][hookKey] = hooks;
     }
 
     hooks.push(fn);
@@ -142,10 +145,10 @@ export default class Hookable {
    * @param fns
    */
   public addHooks(hookKey: string, fns: Array<Function>): void {
-    let hooks = this._hooks[hookKey];
+    let hooks = this[HOOKS][hookKey];
     if (!hooks) {
       hooks = [];
-      this._hooks[hookKey] = hooks;
+      this[HOOKS][hookKey] = hooks;
     }
 
     hooks.push(...fns);
@@ -184,7 +187,7 @@ export default class Hookable {
    * @param fn
    */
   public deleteHook(hookKey: string, fn: Function): void {
-    const hooks = this._hooks[hookKey];
+    const hooks = this[HOOKS][hookKey];
     if (!hooks || !hooks.length) {
       return;
     }
@@ -195,7 +198,7 @@ export default class Hookable {
     }
 
     hooks.splice(index, 1);
-    this._hooks[hookKey] = hooks;
+    this[HOOKS][hookKey] = hooks;
   }
 
   /**
@@ -204,14 +207,14 @@ export default class Hookable {
    * @param hookKey
    */
   public deleteHooks(hookKey: string): void {
-    delete this._hooks[hookKey];
+    delete this[HOOKS][hookKey];
   }
 
   /**
    * delete all hooks
    */
   public clearHooks(): void {
-    this._hooks = {};
+    this[HOOKS] = {};
   }
 
   /**
@@ -222,7 +225,7 @@ export default class Hookable {
    * @param args
    */
   public execHook(hookKey: string, index: number, ...args: any): void {
-    const hooks = this._hooks[hookKey];
+    const hooks = this[HOOKS][hookKey];
     if (!hooks || !hooks.length || !hooks[index]) {
       return;
     }
@@ -240,7 +243,7 @@ export default class Hookable {
    * @param hookKey
    */
   public execHooks(hookKey: string, ...args: any): void {
-    const hooks = this._hooks[hookKey];
+    const hooks = this[HOOKS][hookKey];
     if (!hooks || !hooks.length) {
       return;
     }

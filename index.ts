@@ -10,7 +10,7 @@ const INTERCEPS = Symbol('intercepts');
 export default class Hookable {
   // store all the hook functions
   // {
-  //    "beforeMount": [fn1, fn2],
+  //    'beforeMount': [fn1, fn2],
   // }
   private [HOOKS]: object = {};
 
@@ -29,7 +29,7 @@ export default class Hookable {
           return value;
         }
 
-        // retrive the info injected by the @Hookable.registInterceptHook
+        // get the intercept info
         const beforeHookKey = target.traverseInterceptHookKey(prop, 'before');
         const afterHookKey = target.traverseInterceptHookKey(prop, 'after');
         if (!beforeHookKey && !afterHookKey) {
@@ -49,17 +49,20 @@ export default class Hookable {
 
           return result;
         };
-      }
+      },
     });
   }
 
   /**
-   * regist intercept hook for class methods invocation
+   * decoration way to regist intercept hook for class methods invocation
    *
    * @param hookKey
    * @param isBefore
    */
-  static registInterceptHook(hookKey: string, isBefore: boolean = true): Function {
+  static registInterceptHook(
+    hookKey: string,
+    isBefore: boolean = true
+  ): Function {
     return function (classProto, prop, descriptor) {
       if (!classProto.hasOwnProperty(INTERCEPS)) {
         classProto[INTERCEPS] = {};
@@ -68,6 +71,29 @@ export default class Hookable {
       classProto[INTERCEPS][prop] = classProto[INTERCEPS][prop] || {};
       classProto[INTERCEPS][prop][isBefore ? 'before' : 'after'] = hookKey;
     };
+  }
+
+  /**
+   * static api way to regist intercept hook for class methods invocation
+   *
+   * @param constructor
+   * @param prop
+   * @param hookKey
+   * @param isBefore
+   */
+  static registInterceptHookOnClass(
+    constructor: Function,
+    prop: string,
+    hookKey: string,
+    isBefore: boolean = true
+  ) {
+    const classProto = constructor.prototype;
+    if (!classProto.hasOwnProperty(INTERCEPS)) {
+      classProto[INTERCEPS] = {};
+    }
+
+    classProto[INTERCEPS][prop] = classProto[INTERCEPS][prop] || {};
+    classProto[INTERCEPS][prop][isBefore ? 'before' : 'after'] = hookKey;
   }
 
   /**
@@ -133,7 +159,7 @@ export default class Hookable {
    * @param hookKey
    * @param fn
    */
-  public andMutexHook(hookKey: string, fn: Function): void {
+  public addMutexHook(hookKey: string, fn: Function): void {
     this.deleteHooks(hookKey);
     this.addHook(hookKey, fn);
   }
@@ -160,7 +186,7 @@ export default class Hookable {
    * @param hookKey
    * @param fn
    */
-  public addOnceHook(hookKey: string, fn: Function): void { }
+  public addOnceHook(hookKey: string, fn: Function): void {}
 
   /**
    * TOOD add once hooks
@@ -168,7 +194,7 @@ export default class Hookable {
    * @param hookKey
    * @param fns
    */
-  public addOnceHooks(hookKey: string, fns: Array<Function>): void { }
+  public addOnceHooks(hookKey: string, fns: Array<Function>): void {}
 
   /**
    * TODO get hook function

@@ -41,7 +41,7 @@ export default class Hookable {
             target.execHooks(beforeHookKey, ...args);
           }
 
-          const result = value.apply(target, args);
+          const result = value.apply(this, args);
 
           if (afterHookKey) {
             target.execHooks(afterHookKey, ...args);

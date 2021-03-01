@@ -38,13 +38,13 @@ export default class Hookable {
 
         return function (...args) {
           if (beforeHookKey) {
-            target.execHooks(beforeHookKey);
+            target.execHooks(beforeHookKey, ...args);
           }
 
           const result = value.apply(target, args);
 
           if (afterHookKey) {
-            target.execHooks(afterHookKey);
+            target.execHooks(afterHookKey, ...args);
           }
 
           return result;

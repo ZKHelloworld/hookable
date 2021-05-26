@@ -6,10 +6,10 @@ Provide hook ability for hierarchy classes
 
 ```javascript
 class Base extends Hookable {
-  @Hookable.registInterceptHook('beforeMount')
-  @Hookable.registInterceptHook('afterMount', false)
+  @Hookable.registHook("beforeMount")
+  @Hookable.registHook("afterMount", false)
   mount() {
-    console.log('base mount');
+    console.log("base mount");
   }
 }
 
@@ -17,13 +17,13 @@ class Child extends Base {
   mount() {
     super.mount();
 
-    console.log('child mount');
+    console.log("child mount");
   }
 }
 
 const c = new Child();
-c.addHook('beforeMount', () => console.log('before mount'));
-c.addHook('afterMount', () => console.log('after mount'));
+c.addHook("beforeMount", () => console.log("before mount"));
+c.addHook("afterMount", () => console.log("after mount"));
 
 c.mount();
 // before mount
@@ -37,18 +37,20 @@ c.mount();
 ```javascript
 class Base extends Hookable {
   doSomething() {
-    this.execHooks('beforeDoSomething', 'stage-a' );
+    this.execHooks("beforeDoSomething", "stage-a");
     // do something
-    this.execHooks('doingSomething', 'stage-b');
+    this.execHooks("doingSomething", "stage-b");
     // continue
-    this.execHooks('afterDoSomething', 'stage-c');
+    this.execHooks("afterDoSomething", "stage-c");
   }
 }
 
 const b = new Base();
-b.addHook('beforeDoSomething', (msg) => console.log('before doSomething ', msg));
-b.addHook('doingSomething', (msg) => console.log('doingSomething ', msg));
-b.addHook('afterDoSomething', (msg) => console.log('after doSomething ', msg));
+b.addHook("beforeDoSomething", (msg) =>
+  console.log("before doSomething ", msg)
+);
+b.addHook("doingSomething", (msg) => console.log("doingSomething ", msg));
+b.addHook("afterDoSomething", (msg) => console.log("after doSomething ", msg));
 
 b.doSomething();
 // before doSomething stage-a

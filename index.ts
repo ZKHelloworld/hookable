@@ -4,15 +4,22 @@
 
 type PropType = string | number | symbol;
 
-const HOOKS = Symbol('hooks');
-const INTERCEPS = Symbol('intercepts');
+interface HookMap {
+  [key: string]: {
+    fn: Function;
+    isOnce?: boolean;
+  }[];
+}
+
+const HOOKS = Symbol("hooks");
+const INTERCEPS = Symbol("intercepts");
 
 export default class Hookable {
   // store all the hook functions
   // {
   //    'beforeMount': [fn1, fn2],
   // }
-  private [HOOKS]: object = {};
+  private [HOOKS]: HookMap = {};
 
   constructor() {
     return this.intercept();
@@ -25,13 +32,13 @@ export default class Hookable {
     return new Proxy(this, {
       get(target: any, prop: PropType, receiver: any) {
         const value = Reflect.get(target, prop, receiver);
-        if (typeof value !== 'function') {
+        if (typeof value !== "function") {
           return value;
         }
 
         // get the intercept info
-        const beforeHookKey = target.traverseInterceptHookKey(prop, 'before');
-        const afterHookKey = target.traverseInterceptHookKey(prop, 'after');
+        const beforeHookKey = target.traverseInterceptHookKey(prop, "before");
+        const afterHookKey = target.traverseInterceptHookKey(prop, "after");
         if (!beforeHookKey && !afterHookKey) {
           return value;
         }
@@ -41,7 +48,7 @@ export default class Hookable {
             target.execHooks(beforeHookKey, ...args);
           }
 
-          const result = value.apply(target, args);
+          const result = value.apply(this, args);
 
           if (afterHookKey) {
             target.execHooks(afterHookKey, ...args);
@@ -59,17 +66,15 @@ export default class Hookable {
    * @param hookKey
    * @param isBefore
    */
-  static registInterceptHook(
-    hookKey: string,
-    isBefore: boolean = true
-  ): Function {
+  static registHook(hookKey: string, isBefore: boolean = true): Function {
     return function (classProto, prop, descriptor) {
+      // eslint-disable-next-line no-prototype-builtins
       if (!classProto.hasOwnProperty(INTERCEPS)) {
         classProto[INTERCEPS] = {};
       }
 
       classProto[INTERCEPS][prop] = classProto[INTERCEPS][prop] || {};
-      classProto[INTERCEPS][prop][isBefore ? 'before' : 'after'] = hookKey;
+      classProto[INTERCEPS][prop][isBefore ? "before" : "after"] = hookKey;
     };
   }
 
@@ -81,19 +86,20 @@ export default class Hookable {
    * @param hookKey
    * @param isBefore
    */
-  static registInterceptHookOnClass(
+  static registHookOnClass(
     constructor: Function,
     prop: string,
     hookKey: string,
     isBefore: boolean = true
   ) {
     const classProto = constructor.prototype;
+    // eslint-disable-next-line no-prototype-builtins
     if (!classProto.hasOwnProperty(INTERCEPS)) {
       classProto[INTERCEPS] = {};
     }
 
     classProto[INTERCEPS][prop] = classProto[INTERCEPS][prop] || {};
-    classProto[INTERCEPS][prop][isBefore ? 'before' : 'after'] = hookKey;
+    classProto[INTERCEPS][prop][isBefore ? "before" : "after"] = hookKey;
   }
 
   /**
@@ -116,14 +122,14 @@ export default class Hookable {
    */
   public traverseInterceptHookKey(prop: PropType, type: string): string {
     if (!this || !Object.getPrototypeOf(this)) {
-      return '';
+      return "";
     }
 
     let proto = Object.getPrototypeOf(this);
     while (proto !== null) {
       // non _intercepts in prototype chain
       if (!proto[INTERCEPS]) {
-        return '';
+        return "";
       }
 
       if (!proto[INTERCEPS][prop] || !proto[INTERCEPS][prop][type]) {
@@ -134,7 +140,7 @@ export default class Hookable {
       return proto[INTERCEPS][prop][type];
     }
 
-    return '';
+    return "";
   }
 
   /**
@@ -144,13 +150,17 @@ export default class Hookable {
    * @param fn
    */
   public addHook(hookKey: string, fn: Function): void {
+    if (typeof fn !== "function") {
+      throw new Error("fn is not a function");
+    }
+
     let hooks = this[HOOKS][hookKey];
     if (!hooks) {
       hooks = [];
       this[HOOKS][hookKey] = hooks;
     }
 
-    hooks.push(fn);
+    hooks.push({ fn });
   }
 
   /**
@@ -171,13 +181,17 @@ export default class Hookable {
    * @param fns
    */
   public addHooks(hookKey: string, fns: Array<Function>): void {
+    if (fns.some((fn) => typeof fn !== "function")) {
+      throw new Error("fns have non function item");
+    }
+
     let hooks = this[HOOKS][hookKey];
     if (!hooks) {
       hooks = [];
       this[HOOKS][hookKey] = hooks;
     }
 
-    hooks.push(...fns);
+    hooks.push(...fns.map((fn) => ({ fn })));
   }
 
   /**
@@ -186,7 +200,19 @@ export default class Hookable {
    * @param hookKey
    * @param fn
    */
-  public addOnceHook(hookKey: string, fn: Function): void {}
+  public addOnceHook(hookKey: string, fn: Function): void {
+    if (typeof fn !== "function") {
+      throw new Error("fn is not a function");
+    }
+
+    let hooks = this[HOOKS][hookKey];
+    if (!hooks) {
+      hooks = [];
+      this[HOOKS][hookKey] = hooks;
+    }
+
+    hooks.push({ fn, isOnce: true });
+  }
 
   /**
    * TOOD add once hooks
@@ -194,7 +220,19 @@ export default class Hookable {
    * @param hookKey
    * @param fns
    */
-  public addOnceHooks(hookKey: string, fns: Array<Function>): void {}
+  public addOnceHooks(hookKey: string, fns: Array<Function>): void {
+    if (fns.some((fn) => typeof fn !== "function")) {
+      throw new Error("fns have non function item");
+    }
+
+    let hooks = this[HOOKS][hookKey];
+    if (!hooks) {
+      hooks = [];
+      this[HOOKS][hookKey] = hooks;
+    }
+
+    hooks.push(...fns.map((fn) => ({ fn, isOnce: true })));
+  }
 
   /**
    * TODO get hook function
@@ -218,7 +256,7 @@ export default class Hookable {
       return;
     }
 
-    const index = hooks.findIndex((h) => h === fn);
+    const index = hooks.findIndex((h) => h.fn === fn);
     if (index === -1) {
       return;
     }
@@ -257,7 +295,12 @@ export default class Hookable {
     }
 
     try {
-      hooks[index].apply(this, args);
+      const hook = hooks[index];
+      hook.fn.apply(this, args);
+
+      if (hook.isOnce) {
+        this.deleteHook(hookKey, hook.fn);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -276,7 +319,11 @@ export default class Hookable {
 
     hooks.forEach((hook) => {
       try {
-        hook.apply(this, args);
+        hook.fn.apply(this, args);
+
+        if (hook.isOnce) {
+          this.deleteHook(hookKey, hook.fn);
+        }
       } catch (e) {
         console.error(e);
       }

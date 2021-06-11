@@ -51,7 +51,19 @@ export default class Hookable {
           const result = value.apply(this, args);
 
           if (afterHookKey) {
-            target.execHooks(afterHookKey, ...args);
+            if (result instanceof Promise) {
+              result
+                .then((r) => {
+                  target.execHooks(afterHookKey, ...args);
+                  return r;
+                })
+                .catch((e) => {
+                  target.execHooks(afterHookKey, ...args);
+                  return e;
+                });
+            } else {
+              target.execHooks(afterHookKey, ...args);
+            }
           }
 
           return result;
